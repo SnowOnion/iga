@@ -419,9 +419,16 @@
             }
         }
 
-        function handleMove(x) {
+        function getCanvasX(screenX) {
+            const rect = canvas.getBoundingClientRect();
+            const scale = GAME_WIDTH / rect.width;
+            return (screenX - rect.left) * scale;
+        }
+
+        function handleMove(screenX) {
             if (!isGameOver && gameStarted) {
-                player.x = Math.max(player.size / 2, Math.min(canvas.width - player.size / 2, x));
+                const canvasX = getCanvasX(screenX);
+                player.x = Math.max(player.size / 2, Math.min(GAME_WIDTH - player.size / 2, canvasX));
             }
         }
 
