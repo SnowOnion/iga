@@ -54,3 +54,45 @@
 ---
 
 请让不同运动方式的怪拥有不同形象，从👿💀👾里面选
+
+---
+
+让每个怪都会掉落道具。
+道具掉落后，以较快的速度竖直下落。
+主角吃掉道具，能增加 1 点火力值。初始火力值是 0。
+主角的射击速度随火力值上涨。
+在游戏界面上显示火力值。
+
+---
+
+Bug：怪物不产生了。
+
+---
+
+更坏了，控制台报错：
+```
+(index):282 Uncaught ReferenceError: wizardArmAngle is not defined
+    at drawWizard ((index):282:46)
+    at gameLoop ((index):334:13)
+    at (index):574:9
+
+(index):290 Uncaught ReferenceError: wizardArmAngle is not defined
+    at drawWizard ((index):290:39)
+    at gameLoop ((index):334:13)
+    at startGame ((index):478:13)
+    at HTMLCanvasElement.<anonymous> ((index):524:17)
+```
+
+---
+
+怪物生成逻辑恢复到上一版
+
+---
+
+在开始时给 3 个难度选项，分别每秒 1、2、3 个怪物
+
+---
+
+你刚才为啥为啥干掉了 @[dementor/Windsurf-auto.md] 里面历史记录的 emoji？不要这样了。
+
+---
