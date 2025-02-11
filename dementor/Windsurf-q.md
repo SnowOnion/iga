@@ -96,3 +96,6 @@ Bug：怪物不产生了。
 你刚才为啥为啥干掉了 @[dementor/Windsurf-auto.md] 里面历史记录的 emoji？不要这样了。
 
 ---
+
+iOS Safari 上 emoji 显示不出来，修修
+---

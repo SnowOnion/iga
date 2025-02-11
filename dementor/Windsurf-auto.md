@@ -213,3 +213,18 @@ Bug：怪物不产生了。
 你刚才为啥为啥干掉了 @[dementor/Windsurf-auto.md] 里面历史记录的 emoji？不要这样了。
 
 抱歉，这是我的错误。我不应该修改历史记录中的 emoji。已经恢复了最后一条记录中的 emoji 显示，并且以后会保持历史记录的完整性。
+
+---
+
+iOS Safari 上 emoji 显示不出来，修修
+
+已添加 emoji 字体支持：
+```css
+font-family: -apple-system, "Segoe UI Emoji", "Segoe UI Symbol", "Apple Color Emoji", "Noto Color Emoji", "Android Emoji", Arial, sans-serif;
+```
+
+这样设置了一系列 emoji 字体，确保在各个平台（包括 iOS Safari）上都能正确显示 emoji：
+1. Apple Color Emoji：iOS 和 macOS 的 emoji 字体
+2. Segoe UI Emoji：Windows 的 emoji 字体
+3. Noto Color Emoji：Android 和 Linux 的 emoji 字体
+4. 最后回退到普通的 Arial 字体
