@@ -102,7 +102,7 @@
         最终分数: <span id="finalScore">0</span><br>
         <button id="restartBtn">重新开始</button>
     </div>
-    <div id="version">v0.1.0</div>
+    <div id="version">v0.1.1</div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -156,7 +156,8 @@
                     angle: Math.random() * Math.PI * 2,
                     angleSpeed: (Math.random() - 0.5) * 0.08,
                     amplitude: 10 + Math.random() * 15,
-                    pattern: 'swing'
+                    pattern: 'swing',
+                    emoji: '👿'  // 摆动的恶魔
                 },
                 // 螺旋下降
                 {
@@ -164,7 +165,8 @@
                     angle: Math.random() * Math.PI * 2,
                     angleSpeed: (Math.random() < 0.5 ? 0.05 : -0.05),
                     radius: 50 + Math.random() * 50,
-                    pattern: 'spiral'
+                    pattern: 'spiral',
+                    emoji: '💀'  // 旋转的骷髅
                 },
                 // Z字形
                 {
@@ -173,7 +175,8 @@
                     switchTime: Date.now(),
                     switchInterval: 1000 + Math.random() * 1000,
                     amplitude: 20 + Math.random() * 20,
-                    pattern: 'zigzag'
+                    pattern: 'zigzag',
+                    emoji: '👾'  // Z字形移动的外星人
                 }
             ];
 
@@ -191,12 +194,12 @@
             });
         }
 
-        function drawDementor(x, y, size, health) {
+        function drawDementor(x, y, size, health, emoji) {
             ctx.save();
             ctx.font = `${size}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('😈', x, y);
+            ctx.fillText(emoji, x, y);
 
             // 生命值条
             const healthBarWidth = size;
@@ -204,9 +207,9 @@
             const healthPercentage = health / 3;
 
             ctx.fillStyle = '#600';
-            ctx.fillRect(x - size / 2, y - size / 2 - 10, healthBarWidth, healthBarHeight);
+            ctx.fillRect(x - size/2, y - size/2 - 10, healthBarWidth, healthBarHeight);
             ctx.fillStyle = '#f00';
-            ctx.fillRect(x - size / 2, y - size / 2 - 10, healthBarWidth * healthPercentage, healthBarHeight);
+            ctx.fillRect(x - size/2, y - size/2 - 10, healthBarWidth * healthPercentage, healthBarHeight);
 
             ctx.restore();
         }
@@ -351,7 +354,7 @@
                 // 确保摄魂怪不会完全离开屏幕
                 dementor.x = Math.max(dementor.size / 2, Math.min(canvas.width - dementor.size / 2, dementor.x));
 
-                drawDementor(dementor.x, dementor.y, dementor.size, dementor.health);
+                drawDementor(dementor.x, dementor.y, dementor.size, dementor.health, dementor.emoji);
 
                 if (checkCollision(dementor, player)) {
                     gameOver();
