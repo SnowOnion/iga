@@ -10,7 +10,7 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background: #001;
+            background: #000;
             touch-action: none;
             font-family: Arial, sans-serif;
             position: fixed;
@@ -19,12 +19,15 @@
         }
 
         #gameCanvas {
-            width: 100%;
-            height: 100%;
             position: fixed;
-            top: 0;
-            left: 0;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 100%;
+            max-height: 800px;
             touch-action: none;
+            background: #001;
         }
 
         #score {
@@ -105,23 +108,30 @@
         let time = 0;
         let wizardArmAngle = 0;
         let spellFired = false;
+        let score = 0;
+        let isGameOver = false;
+
+        const GAME_WIDTH = 400;
+        const GAME_HEIGHT = Math.min(window.innerHeight, 800);
+
+        const player = {
+            x: GAME_WIDTH / 2,
+            y: GAME_HEIGHT - 100,
+            size: 40
+        };
 
         function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            canvas.width = GAME_WIDTH;
+            canvas.height = GAME_HEIGHT;
+            
+            // 更新玩家位置，但保持在水平方向的相对位置
+            const playerXRatio = player.x / GAME_WIDTH;
+            player.x = GAME_WIDTH * playerXRatio;
+            player.y = GAME_HEIGHT - 100;
         }
 
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
-
-        let score = 0;
-        let isGameOver = false;
-
-        const player = {
-            x: canvas.width / 2,
-            y: canvas.height - 100,
-            size: 40
-        };
 
         let dementors = [];
         let spells = [];
