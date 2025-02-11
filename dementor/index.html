@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>守护神对抗摄魂怪</title>
     <style>
@@ -180,9 +181,9 @@
         const healthPercentage = health / 3;
 
         ctx.fillStyle = '#600';
-        ctx.fillRect(x - size / 2, y - size / 2 - 10, healthBarWidth, healthBarHeight);
+        ctx.fillRect(x - size/2, y - size/2 - 10, healthBarWidth, healthBarHeight);
         ctx.fillStyle = '#f00';
-        ctx.fillRect(x - size / 2, y - size / 2 - 10, healthBarWidth * healthPercentage, healthBarHeight);
+        ctx.fillRect(x - size/2, y - size/2 - 10, healthBarWidth * healthPercentage, healthBarHeight);
 
         ctx.restore();
     }
