@@ -228,3 +228,46 @@ font-family: -apple-system, "Segoe UI Emoji", "Segoe UI Symbol", "Apple Color Em
 2. Segoe UI Emoji：Windows 的 emoji 字体
 3. Noto Color Emoji：Android 和 Linux 的 emoji 字体
 4. 最后回退到普通的 Arial 字体
+
+---
+
+iOS Safari Firefox Chrome 还是不能显示怪物的 emoji，是不是 canvas 的原因
+
+是的，很可能是 Canvas 的问题。在某些浏览器中，Canvas 的 `fillText` 方法对 emoji 的支持不太好。我已经做了以下修改：
+
+1. 添加了一个测试用的 div（右上角），显示三种怪物的 emoji（/），用来验证是否是 Canvas 的问题。
+
+2. 修改了怪物的显示方式：
+   - 不再使用 Canvas 的 `fillText` 绘制 emoji
+   - 改用 HTML div 元素显示 emoji
+   - 只用 Canvas 绘制生命值条
+   - 确保 div 元素正确定位和缩放
+
+3. 添加了清理函数：
+   - 游戏结束时清除所有怪物元素
+   - 重新开始时清除所有怪物元素
+   - 开始新游戏时清除所有怪物元素
+
+请测试一下，看看现在是否能在所有浏览器上正确显示 emoji 了。如果右上角的测试 emoji 能显示但游戏中的怪物还是不能显示，请告诉我。
+
+---
+
+怪物能显示了！但请修复：1. 生命值的条不居中了；2. Mac Safari 上道具⚡不显示。改完请移除测试 div，并且记录对话、更新最小版本号
+
+已修复：
+1. 生命值条居中：修改了生命值条的宽度和位置计算，使用 `scaledSize` 作为宽度，确保与怪物大小一致
+2. 道具显示：将道具也改用 HTML div 元素显示，与怪物使用相同的渲染方式
+3. 移除了测试用的 emoji div
+4. 版本号更新到 v0.1.4
+
+所有游戏元素（怪物、道具）现在都使用 HTML div 元素显示，只有生命值条和守护神咒使用 Canvas 绘制。这样可以确保在所有浏览器上都能正确显示 emoji。
+
+---
+
+生命值条还是不居中，或者说与怪物 emoji 中间不对齐，也许怪物没居中？
+
+已修复：
+1. 为怪物 div 添加了 `transform: translate(-50%, -50%)`，确保怪物 emoji 在指定位置居中显示
+2. 修改了生命值条的位置计算，使用 `healthBarWidth/2` 和 `scaledSize/2` 来确保生命值条与怪物居中对齐
+
+这样怪物和生命值条都应该正确居中对齐了。请测试一下效果。

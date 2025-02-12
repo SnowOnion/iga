@@ -1,5 +1,18 @@
 # ChangeLog
 
+## [v0.1.4] - 2025-02-12
+
+### Fixed
+- 修复了 iOS Safari、Firefox、Chrome 上怪物 emoji 不显示的问题
+- 修复了 Mac Safari 上道具 emoji 不显示的问题
+- 修复了怪物生命值条不居中的问题
+- 修复了怪物 emoji 和生命值条的对齐问题
+
+### Changed
+- 改用 HTML div 元素显示怪物和道具，确保跨浏览器兼容性
+- 只用 Canvas 绘制生命值条和守护神咒
+- 添加了 transform: translate(-50%, -50%) 确保怪物居中显示
+
 ## [v0.1.3] - 2025-02-11
 
 ### 新增
