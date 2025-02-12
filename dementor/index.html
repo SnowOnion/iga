@@ -42,9 +42,9 @@
         #gameInfo {
             position: absolute;
             right: 10px;
-            top: 10px;
+            top: max(10px, env(safe-area-inset-top, 10px));
             color: #fff;
-            font-size: 18px;
+            font-size: min(18px, 4vmin);
             text-align: right;
             z-index: 1;
             display: flex;
@@ -57,6 +57,7 @@
             background: rgba(0, 0, 0, 0.7);
             border: 1px solid #333;
             border-radius: 5px;
+            white-space: nowrap;
         }
 
         #startMessage {
@@ -168,7 +169,7 @@
             <button id="restartBtn">重新开始</button>
         </div>
     </div>
-    <div id="version">v0.1.8</div>
+    <div id="version">v0.1.14</div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -291,6 +292,9 @@
         }
 
         function drawDementor(x, y, size, health, emoji) {
+            const pos = getCanvasPosition(x, y);
+            const scaledSize = size * (canvas.getBoundingClientRect().width / canvas.width);
+
             // 绘制生命值条
             ctx.save();
             ctx.fillStyle = '#600';
@@ -302,20 +306,12 @@
             // 绘制怪物
             const dementor = document.createElement('div');
             dementor.className = 'dementor';
-            dementor.style.left = x + 'px';
-            dementor.style.top = y + 'px';
-            dementor.style.fontSize = size + 'px';
+            dementor.style.left = pos.x + 'px';
+            dementor.style.top = pos.y + 'px';
+            dementor.style.fontSize = scaledSize + 'px';
             dementor.textContent = emoji;
             document.body.appendChild(dementor);
             dementorElements.add(dementor);
-            
-            // 显示碰撞区域
-            ctx.save();
-            ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
-            ctx.beginPath();
-            ctx.arc(x, y, size/2.5, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.restore();
         }
 
         function checkCollision(x1, y1, x2, y2, distance) {
@@ -329,7 +325,7 @@
                 const obj2 = arguments[1];
                 const dx = obj1.x - obj2.x;
                 const dy = obj1.y - obj2.y;
-                return Math.hypot(dx, dy) < obj1.size/2.5;
+                return Math.hypot(dx, dy) < obj1.size/2;
             }
         }
 
@@ -393,7 +389,7 @@
             ctx.ellipse(x + size/2, y, size/4, size/6, -Math.PI/4, 0, Math.PI * 2);
             ctx.fill();
 
-            // 如果需要调试碰撞区域，取消下面的注释
+            // 显示碰撞区域
             ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
             ctx.beginPath();
             ctx.arc(x, y, size/6, 0, Math.PI * 2);
