@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>博丽灵梦大战</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <link rel="stylesheet" href="https://npm.elemecdn.com/lxgw-wenkai-screen-webfont@1.1.0/style.css" />
     <style>
         body {
@@ -22,34 +23,41 @@
 
         #gameContainer {
             position: relative;
-            width: 400px;
-            height: 800px;
+            width: 100vmin;
+            height: 200vmin;
+            max-width: 500px;
+            max-height: 1000px;
         }
 
         #gameCanvas {
             position: absolute;
             left: 0;
             top: 0;
+            width: 100%;
+            height: 100%;
             background: #000;
             border: 1px solid #333;
         }
 
         #gameInfo {
             position: absolute;
-            right: -120px;
-            top: 0;
-            width: 100px;
+            right: 10px;
+            top: max(10px, env(safe-area-inset-top, 10px));
             color: #fff;
-            font-size: 18px;
-            text-align: left;
+            font-size: min(18px, 4vmin);
+            text-align: right;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
         }
 
         #score, #powerLevel {
-            margin: 10px 0;
-            padding: 5px;
+            padding: 5px 10px;
             background: rgba(0, 0, 0, 0.7);
             border: 1px solid #333;
             border-radius: 5px;
+            white-space: nowrap;
         }
 
         #startMessage {
@@ -161,7 +169,7 @@
             <button id="restartBtn">重新开始</button>
         </div>
     </div>
-    <div id="version">v0.1.6</div>
+    <div id="version">v0.1.14</div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -265,6 +273,14 @@
         dementorContainer.style.pointerEvents = 'none';
         document.body.appendChild(dementorContainer);
 
+        let dementorElements = new Set();
+
+        function clearDementors() {
+            // 清除所有 dementor 元素
+            dementorElements.forEach(el => el.remove());
+            dementorElements.clear();
+        }
+
         function getCanvasPosition(x, y) {
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
@@ -279,72 +295,105 @@
             const pos = getCanvasPosition(x, y);
             const scaledSize = size * (canvas.getBoundingClientRect().width / canvas.width);
 
-            // 获取或创建 dementor 元素
-            let dementorEl = document.getElementById(`dementor-${x}-${y}`);
-            if (!dementorEl) {
-                dementorEl = document.createElement('div');
-                dementorEl.id = `dementor-${x}-${y}`;
-                dementorEl.className = 'dementor';
-                dementorContainer.appendChild(dementorEl);
-            }
-
-            // 更新位置和样式
-            dementorEl.style.left = pos.x + 'px';
-            dementorEl.style.top = pos.y + 'px';
-            dementorEl.style.fontSize = scaledSize + 'px';
-            dementorEl.textContent = emoji;
-
-            // 生命值条
-            const healthBarWidth = scaledSize;
-            const healthBarHeight = 3;
-            const healthPercentage = health / 3;
-
+            // 绘制生命值条
             ctx.save();
             ctx.fillStyle = '#600';
-            ctx.fillRect(x - healthBarWidth/2, y - scaledSize/2 - 10, healthBarWidth, healthBarHeight);
-            ctx.fillStyle = '#f00';
-            ctx.fillRect(x - healthBarWidth/2, y - scaledSize/2 - 10, healthBarWidth * healthPercentage, healthBarHeight);
+            const healthBarWidth = size;
+            const healthBarHeight = 4;
+            ctx.fillRect(x - healthBarWidth/2, y - size/2 - 10, healthBarWidth * health / 3, healthBarHeight);
             ctx.restore();
+
+            // 绘制怪物
+            const dementor = document.createElement('div');
+            dementor.className = 'dementor';
+            dementor.style.left = pos.x + 'px';
+            dementor.style.top = pos.y + 'px';
+            dementor.style.fontSize = scaledSize + 'px';
+            dementor.textContent = emoji;
+            document.body.appendChild(dementor);
+            dementorElements.add(dementor);
         }
 
-        function clearDementors() {
-            // 清除所有 dementor 元素
-            while (dementorContainer.firstChild) {
-                dementorContainer.removeChild(dementorContainer.firstChild);
+        function checkCollision(x1, y1, x2, y2, distance) {
+            if (arguments.length === 5) {
+                // 主角的碰撞检测（保持小范围）
+                const actualDistance = distance / 3;
+                return Math.hypot(x1 - x2, y1 - y2) < actualDistance;
+            } else {
+                // 怪物的碰撞检测（与显示大小接近）
+                const obj1 = arguments[0];
+                const obj2 = arguments[1];
+                const dx = obj1.x - obj2.x;
+                const dy = obj1.y - obj2.y;
+                return Math.hypot(dx, dy) < obj1.size/2;
             }
         }
 
         function drawWizard(x, y, size, castingSpell) {
             ctx.save();
-            ctx.fillStyle = '#f00';  // 红白色调
             
-            // 绘制裙子（三角形）
+            // 绘制红白蝴蝶结（移到头上）
+            const bowSize = size/4;
+            // 红色部分
+            ctx.fillStyle = '#f00';
             ctx.beginPath();
-            ctx.moveTo(x, y - size/3);
+            ctx.ellipse(x - bowSize/2, y - size*0.8, bowSize/2, bowSize/4, Math.PI/4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(x + bowSize/2, y - size*0.8, bowSize/2, bowSize/4, -Math.PI/4, 0, Math.PI * 2);
+            ctx.fill();
+            // 白色中心
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(x, y - size*0.8, bowSize/4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 绘制裙子（红色）
+            ctx.fillStyle = '#f00';
+            ctx.beginPath();
+            ctx.moveTo(x, y - size/2);
             ctx.lineTo(x - size/2, y + size/2);
             ctx.lineTo(x + size/2, y + size/2);
             ctx.closePath();
             ctx.fill();
 
-            // 绘制头部（圆形）
+            // 绘制白色围裙
             ctx.fillStyle = '#fff';
             ctx.beginPath();
-            ctx.arc(x, y - size/3, size/3, 0, Math.PI * 2);
+            ctx.moveTo(x, y - size/3);
+            ctx.lineTo(x - size/3, y + size/3);
+            ctx.lineTo(x + size/3, y + size/3);
+            ctx.closePath();
             ctx.fill();
 
-            // 绘制蝴蝶结
-            ctx.fillStyle = '#f00';
+            // 绘制头部（白色）
+            ctx.fillStyle = '#fff';
             ctx.beginPath();
-            ctx.arc(x, y - size/6, size/6, 0, Math.PI * 2);
+            ctx.arc(x, y - size/2, size/3, 0, Math.PI * 2);
             ctx.fill();
 
-            // 如果正在施法，添加发光效果
-            if (castingSpell) {
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-                ctx.beginPath();
-                ctx.arc(x, y, size, 0, Math.PI * 2);
-                ctx.fill();
-            }
+            // 绘制黑色长发
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(x, y - size/2, size/3 + 2, Math.PI * 0.2, Math.PI * 0.8, true);
+            ctx.fill();
+
+            // 绘制袖子
+            ctx.fillStyle = '#f00';
+            // 左袖
+            ctx.beginPath();
+            ctx.ellipse(x - size/2, y, size/4, size/6, Math.PI/4, 0, Math.PI * 2);
+            ctx.fill();
+            // 右袖
+            ctx.beginPath();
+            ctx.ellipse(x + size/2, y, size/4, size/6, -Math.PI/4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 显示碰撞区域
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+            ctx.beginPath();
+            ctx.arc(x, y, size/6, 0, Math.PI * 2);
+            ctx.stroke();
 
             ctx.restore();
         }
@@ -364,13 +413,6 @@
             }
         }
 
-        function checkCollision(rect1, rect2) {
-            const dx = rect1.x - rect2.x;
-            const dy = rect1.y - rect2.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            return distance < (rect1.size + rect2.size) / 2;
-        }
-
         function updateSpells() {
             for (let i = spells.length - 1; i >= 0; i--) {
                 const spell = spells[i];
@@ -383,17 +425,26 @@
 
         function drawSpells() {
             spells.forEach(spell => {
-                const gradient = ctx.createRadialGradient(
-                    spell.x, spell.y, 0,
-                    spell.x, spell.y, spell.size
-                );
-                gradient.addColorStop(0, '#f00');  // 红色御札
-                gradient.addColorStop(1, 'rgba(255,0,0,0)');
-
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.arc(spell.x, spell.y, spell.size, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.save();
+                
+                // 计算旋转角度
+                spell.rotation = (spell.rotation || 0) + 0.1;
+                
+                // 移动到子弹位置并旋转
+                ctx.translate(spell.x, spell.y);
+                ctx.rotate(spell.rotation);
+                
+                // 绘制方块
+                const size = spell.size * 1.5;
+                ctx.fillStyle = 'rgba(255, 200, 200, 0.7)';  // 淡红色
+                ctx.fillRect(-size/2, -size/2, size, size);
+                
+                // 绘制内部白色方块
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';  // 半透明白色
+                const innerSize = size * 0.6;
+                ctx.fillRect(-innerSize/2, -innerSize/2, innerSize, innerSize);
+                
+                ctx.restore();
             });
         }
 
@@ -512,20 +563,18 @@
                                 spells.splice(j, 1);
 
                                 if (dementor.health <= 0) {
-                                    score++;
-                                    document.getElementById('score').textContent = `分数: ${score}`;
-                                    spawnPowerUp(dementor.x, dementor.y);
                                     dementors.splice(i, 1);
-                                    continue;
+                                    score += 100;
+                                    document.getElementById('score').textContent = '分数: ' + score;
+                                    break;
                                 }
                             }
                         }
 
-                        // 绘制摄魂怪
                         drawDementor(dementor.x, dementor.y, dementor.size, dementor.health, dementor.emoji);
 
                         // 检查与玩家碰撞
-                        if (checkCollision(dementor, player)) {
+                        if (checkCollision(dementor.x, dementor.y, player.x, player.y, dementor.size)) {
                             gameOver();
                             return;
                         }
