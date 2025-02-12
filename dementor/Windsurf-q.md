@@ -118,3 +118,15 @@ iOS Safari Firefox Chrome 还是不能显示怪物的 emoji，是不是 canvas �
 ---
 
 请优化 UI：1. 主角换成博丽灵梦 2. 分数、火力的显示，放到游戏主界面的右侧 3. 所有字的字体换成漂亮的可商用字体（注意已经通过 div 解决了 emoji 显示问题，先前有些意在解决这个问题的过度尝试，可以撤回了）
+
+---
+
+fonts.googleapis.com、fonts.gstatic.com 改成在中国大陆容易访问的吧
+
+---
+
+挺好，但是不要修改 @Windsurf-auto.md 里的历史了，特别是不要删除历史里的 emoji！以前说过了。此外，字体 css 无法访问
+
+---
+
+”不要修改历史记录“的意思是，对于 @Windsurf-q.md 和 @Windsurf-auto.md ，你应该只往最后加东西，不应该改已有的东西
