@@ -3,87 +3,130 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>守护神对抗摄魂怪</title>
+    <title>博丽灵梦大战</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0;
             overflow: hidden;
             background: #000;
             touch-action: none;
-            font-family: -apple-system, "Segoe UI Emoji", "Segoe UI Symbol", "Apple Color Emoji", "Noto Color Emoji", "Android Emoji", Arial, sans-serif;
+            font-family: 'ZCOOL XiaoWei', -apple-system, sans-serif;
             position: fixed;
             width: 100%;
             height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 400px;
+            height: 800px;
         }
 
         #gameCanvas {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 400px;
-            height: 100%;
-            max-height: 800px;
-            touch-action: none;
-            background: #001;
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #000;
+            border: 1px solid #333;
         }
 
-        #score {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            color: white;
-            font-size: 24px;
-            z-index: 1;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        #gameInfo {
+            position: absolute;
+            right: -120px;
+            top: 0;
+            width: 100px;
+            color: #fff;
+            font-size: 18px;
+            text-align: left;
         }
 
-        #powerLevel {
-            position: fixed;
-            top: 40px;
-            left: 10px;
-            color: #ff0;
-            font-size: 20px;
-            z-index: 2;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        }
-
-        #gameOver {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 32px;
-            text-align: center;
-            display: none;
-            z-index: 2;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        }
-
-        #restartBtn {
-            padding: 10px 20px;
-            font-size: 20px;
-            background: #4444ff;
-            color: white;
-            border: none;
+        #score, #powerLevel {
+            margin: 10px 0;
+            padding: 5px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #333;
             border-radius: 5px;
-            cursor: pointer;
-            margin-top: 20px;
-            box-shadow: 0 0 10px rgba(0, 0, 255, 0.5);
         }
 
         #startMessage {
-            position: fixed;
+            position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: white;
+            color: #fff;
             font-size: 24px;
             text-align: center;
-            z-index: 2;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #333;
+        }
+
+        #difficulty {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 24px;
+            text-align: center;
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #333;
+        }
+
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 24px;
+            text-align: center;
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #333;
+        }
+
+        .difficulty-btn, #restartBtn {
+            background: #333;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-family: inherit;
+            transition: background 0.2s;
+        }
+
+        .difficulty-btn:hover, #restartBtn:hover {
+            background: #666;
+        }
+
+        .dementor {
+            position: absolute;
+            pointer-events: none;
+            z-index: 1;
+            transform: translate(-50%, -50%);
         }
 
         #version {
@@ -93,69 +136,34 @@
             color: #666;
             font-size: 12px;
         }
-
-        #difficulty {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.8);
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 3;
-        }
-
-        .difficulty-btn {
-            padding: 10px 20px;
-            margin: 5px;
-            font-size: 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            background: #444;
-            color: #fff;
-            transition: background 0.3s;
-        }
-
-        .difficulty-btn:hover {
-            background: #666;
-        }
-
-        .dementor {
-            position: absolute;
-            pointer-events: none;
-            z-index: 1;
-            transform: translate(-50%, -50%);  /* 确保怪物居中 */
-        }
     </style>
 </head>
 
 <body>
-    <canvas id="gameCanvas"></canvas>
-    <div id="score">分数: 0</div>
-    <div id="powerLevel">火力: 0</div>
-    <div id="startMessage">
-        点击屏幕开始游戏<br>
-        移动手指控制巫师<br>
-        守护神咒会自动发射
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="gameInfo">
+            <div id="score">分数: 0</div>
+            <div id="powerLevel">火力: 0</div>
+        </div>
+        <div id="startMessage">
+            点击屏幕开始游戏<br>
+            移动手指控制灵梦<br>
+            御札会自动发射
+        </div>
+        <div id="difficulty">
+            选择难度：<br>
+            <button class="difficulty-btn" data-difficulty="1">简单</button>
+            <button class="difficulty-btn" data-difficulty="2">中等</button>
+            <button class="difficulty-btn" data-difficulty="3">困难</button>
+        </div>
+        <div id="gameOver">
+            游戏结束<br>
+            最终分数: <span id="finalScore">0</span><br>
+            <button id="restartBtn">重新开始</button>
+        </div>
     </div>
-    <div id="difficulty">
-        选择难度：<br>
-        <button class="difficulty-btn" data-difficulty="1">简单</button>
-        <button class="difficulty-btn" data-difficulty="2">中等</button>
-        <button class="difficulty-btn" data-difficulty="3">困难</button>
-    </div>
-    <div id="gameOver">
-        游戏结束<br>
-        最终分数: <span id="finalScore">0</span><br>
-        <button id="restartBtn">重新开始</button>
-    </div>
-    <div id="version">v0.1.5</div>
+    <div id="version">v0.1.6</div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -310,40 +318,35 @@
 
         function drawWizard(x, y, size, castingSpell) {
             ctx.save();
-            ctx.translate(x, y);
-
-            // 身体（圆形）
+            ctx.fillStyle = '#f00';  // 红白色调
+            
+            // 绘制裙子（三角形）
             ctx.beginPath();
-            ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
-            ctx.fillStyle = '#4a4a4a';
+            ctx.moveTo(x, y - size/3);
+            ctx.lineTo(x - size/2, y + size/2);
+            ctx.lineTo(x + size/2, y + size/2);
+            ctx.closePath();
             ctx.fill();
 
-            // 左手臂（静止）
+            // 绘制头部（圆形）
+            ctx.fillStyle = '#fff';
             ctx.beginPath();
-            ctx.moveTo(-size / 4, 0);
-            ctx.lineTo(-size / 2, size / 3);
-            ctx.strokeStyle = '#4a4a4a';
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
-            // 右手臂（动画）
-            const castingProgress = (Date.now() - lastShootTime) / 400;
-            const maxArmAngle = Math.PI / 3;
-            const armAngle = castingSpell ? maxArmAngle * Math.sin(Math.PI * castingProgress) : 0;
-
-            ctx.beginPath();
-            ctx.moveTo(size / 4, 0);
-            ctx.lineTo(
-                size / 4 + Math.cos(-Math.PI / 4 + armAngle) * size / 2,
-                Math.sin(-Math.PI / 4 + armAngle) * size / 2
-            );
-            ctx.stroke();
-
-            // 头（圆形）
-            ctx.beginPath();
-            ctx.arc(0, -size / 3, size / 4, 0, Math.PI * 2);
-            ctx.fillStyle = '#4a4a4a';
+            ctx.arc(x, y - size/3, size/3, 0, Math.PI * 2);
             ctx.fill();
+
+            // 绘制蝴蝶结
+            ctx.fillStyle = '#f00';
+            ctx.beginPath();
+            ctx.arc(x, y - size/6, size/6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 如果正在施法，添加发光效果
+            if (castingSpell) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
 
             ctx.restore();
         }
@@ -386,8 +389,8 @@
                     spell.x, spell.y, 0,
                     spell.x, spell.y, spell.size
                 );
-                gradient.addColorStop(0, '#fff');
-                gradient.addColorStop(1, 'rgba(255,255,255,0)');
+                gradient.addColorStop(0, '#f00');  // 红色御札
+                gradient.addColorStop(1, 'rgba(255,0,0,0)');
 
                 ctx.fillStyle = gradient;
                 ctx.beginPath();
