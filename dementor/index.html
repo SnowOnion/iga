@@ -10,41 +10,37 @@
         body {
             margin: 0;
             overflow: hidden;
-            background: #000;
-            touch-action: none;
-            font-family: "LXGW WenKai Screen", -apple-system, sans-serif;
-            position: fixed;
-            width: 100%;
-            height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
+            min-height: 100vh;
+            background: #000;
+            font-family: "ZCOOL XiaoWei", system-ui, -apple-system, sans-serif;
         }
 
         #gameContainer {
             position: relative;
             width: 100vmin;
-            height: 200vmin;
-            max-width: 500px;
-            max-height: 1000px;
+            height: 100vmin;
+            max-width: 100vw;
+            max-height: 100vh;
         }
 
-        #gameCanvas {
+        canvas {
             position: absolute;
-            left: 0;
-            top: 0;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             width: 100%;
             height: 100%;
-            background: #000;
-            border: 1px solid #333;
         }
 
         #gameInfo {
             position: absolute;
             right: 10px;
-            top: max(10px, env(safe-area-inset-top, 10px));
+            top: 10px;
             color: #fff;
-            font-size: min(18px, 4vmin);
+            font-size: 18px;
             text-align: right;
             z-index: 1;
             display: flex;
@@ -142,6 +138,34 @@
             color: #666;
             font-size: 12px;
         }
+
+        .message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 2;
+        }
+
+        .message button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .message button:hover {
+            background: #45a049;
+        }
     </style>
 </head>
 
@@ -150,22 +174,17 @@
         <canvas id="gameCanvas"></canvas>
         <div id="gameInfo">
             <div id="score">分数: 0</div>
-            <div id="powerLevel">火力: 0</div>
+            <div id="powerLevel">火力: 1</div>
         </div>
-        <div id="startMessage">
-            点击屏幕开始游戏<br>
-            移动手指控制灵梦<br>
-            御札会自动发射
+        <div id="startMessage" class="message">
+            <h2>选择难度</h2>
+            <button id="easyBtn">简单</button>
+            <button id="normalBtn">普通</button>
+            <button id="hardBtn">困难</button>
         </div>
-        <div id="difficulty">
-            选择难度：<br>
-            <button class="difficulty-btn" data-difficulty="1">简单</button>
-            <button class="difficulty-btn" data-difficulty="2">中等</button>
-            <button class="difficulty-btn" data-difficulty="3">困难</button>
-        </div>
-        <div id="gameOver">
-            游戏结束<br>
-            最终分数: <span id="finalScore">0</span><br>
+        <div id="gameOverMessage" class="message" style="display: none;">
+            <h2>游戏结束</h2>
+            <p>最终分数: <span id="finalScore">0</span></p>
             <button id="restartBtn">重新开始</button>
         </div>
     </div>
@@ -216,117 +235,200 @@
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
-        function spawnDementor() {
-            const size = 40;
-            const patterns = [
-                // 直线下落+小幅摆动
-                {
-                    speed: 2 + Math.random(),
-                    angle: Math.random() * Math.PI * 2,
-                    angleSpeed: (Math.random() - 0.5) * 0.08,
-                    amplitude: 10 + Math.random() * 15,
-                    pattern: 'swing',
-                    emoji: '👿'  // 摆动的恶魔
-                },
-                // 螺旋下降
-                {
-                    speed: 1.5 + Math.random(),
-                    angle: Math.random() * Math.PI * 2,
-                    angleSpeed: (Math.random() < 0.5 ? 0.05 : -0.05),
-                    radius: 50 + Math.random() * 50,
-                    pattern: 'spiral',
-                    emoji: '💀'  // 旋转的骷髅
-                },
-                // Z字形
-                {
-                    speed: 1.8 + Math.random(),
-                    direction: Math.random() < 0.5 ? 1 : -1,
-                    switchTime: Date.now(),
-                    switchInterval: 1000 + Math.random() * 1000,
-                    amplitude: 20 + Math.random() * 20,
-                    pattern: 'zigzag',
-                    emoji: '👾'  // Z字形移动的外星人
+
+        function updatePlayer() {
+            // 自动发射子弹
+            const now = Date.now();
+            if (now - lastSpellTime > spellCooldown) {
+                for (let i = 0; i < player.power; i++) {
+                    const offset = (i - (player.power - 1) / 2) * 20;  // 多个子弹之间的间距
+                    spells.push({
+                        x: player.x + offset,
+                        y: player.y,
+                        size: 10,
+                        speed: spellSpeed
+                    });
                 }
-            ];
+                lastSpellTime = now;
+                player.castingSpell = true;
+                setTimeout(() => {
+                    player.castingSpell = false;
+                }, 100);
+            }
+        }
 
-            const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+        function updateSpells() {
+            for (let i = spells.length - 1; i >= 0; i--) {
+                const spell = spells[i];
+                spell.y -= spell.speed;
+
+                // 移除超出屏幕的子弹
+                if (spell.y < -spell.size) {
+                    spells.splice(i, 1);
+                    continue;
+                }
+
+                // 绘制子弹
+                const pos = getCanvasPosition(spell.x, spell.y);
+                const scaledSize = spell.size * (canvas.getBoundingClientRect().width / canvas.width);
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, scaledSize / 2, 0, Math.PI * 2);
+                ctx.fillStyle = player.castingSpell ? '#fff' : '#f00';
+                ctx.fill();
+            }
+        }
+
+        function updateDementors() {
+            const now = Date.now();
+            
+            // 根据难度调整生成间隔
+            if (now - lastSpawnTime > 2000 / difficulty) {
+                spawnDementor();
+                lastSpawnTime = now;
+            }
+
+            for (let i = dementors.length - 1; i >= 0; i--) {
+                const dementor = dementors[i];
+                dementor.y += dementor.speed;
+
+                // 检查是否被击中
+                for (let j = spells.length - 1; j >= 0; j--) {
+                    const spell = spells[j];
+                    if (checkCollision(spell.x, spell.y, dementor.x, dementor.y, spell.size + dementor.size)) {
+                        spells.splice(j, 1);
+                        dementors.splice(i, 1);
+                        score++;
+                        document.getElementById('score').textContent = '分数: ' + score;
+                        spawnPowerUp(dementor.x, dementor.y);
+                        return;
+                    }
+                }
+
+                // 检查是否撞到玩家
+                if (checkCollision(player.x, player.y, dementor.x, dementor.y, player.size + dementor.size)) {
+                    gameOver();
+                    return;
+                }
+
+                // 检查是否超出屏幕
+                if (dementor.y > canvas.height + dementor.size) {
+                    dementors.splice(i, 1);
+                    continue;
+                }
+
+                // 更新怪物位置
+                const pos = getCanvasPosition(dementor.x, dementor.y);
+                const scaledSize = dementor.size * (canvas.getBoundingClientRect().width / canvas.width);
+                const dementorEl = Array.from(dementorElements)[i];
+                if (dementorEl) {
+                    dementorEl.style.left = pos.x + 'px';
+                    dementorEl.style.top = pos.y + 'px';
+                    dementorEl.style.fontSize = scaledSize + 'px';
+                }
+            }
+        }
+
+        function updatePowerUps() {
+            for (let i = powerUps.length - 1; i >= 0; i--) {
+                const powerUp = powerUps[i];
+                powerUp.y += powerUp.speed;
+
+                // 检查是否被收集
+                if (checkCollision(player.x, player.y, powerUp.x, powerUp.y, player.size + powerUp.size)) {
+                    if (powerUp.type === 'score') {
+                        score += 3;
+                        document.getElementById('score').textContent = '分数: ' + score;
+                    } else if (powerUp.type === 'power') {
+                        player.power = Math.min(player.power + 1, 10);
+                        document.getElementById('powerLevel').textContent = '火力: ' + player.power;
+                    }
+                    powerUps.splice(i, 1);
+                    continue;
+                }
+
+                // 检查是否超出屏幕
+                if (powerUp.y > canvas.height + powerUp.size) {
+                    powerUps.splice(i, 1);
+                    continue;
+                }
+
+                drawPowerUp(powerUp);
+            }
+        }
+
+        function gameLoop() {
+            const now = Date.now();
+            deltaTime = now - lastFrameTime;
+            lastFrameTime = now;
+
+            clearCanvas();
+            clearDementors();
+
+            if (gameState === 'playing') {
+                updatePlayer();
+                updateSpells();
+                updateDementors();
+                updatePowerUps();
+                drawWizard(player.x, player.y, player.size, player.castingSpell);
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // 游戏状态变量
+        const maxPower = 10;
+        const dementorElements = new Set();
+        const spellCooldown = 200;  // 发射间隔（毫秒）
+        let spellSpeed = 5;  // 子弹速度
+
+        let lastFrameTime = Date.now();
+        let gameStarted = false;
+        let isGameOver = false;
+        let score = 0;
+        let dementors = [];
+        let spells = [];
+        let powerUps = [];
+        let lastSpawnTime = Date.now();
+        let lastSpellTime = 0;
+        let difficulty = 2;  // 默认中等难度
+        let player = {
+            x: canvas.width / 2,
+            y: canvas.height - 50,
+            size: 30,
+            power: 1,
+            castingSpell: false
+        };
+
+        // 设置画布大小
+        function resizeCanvas() {
+            const container = document.getElementById('gameContainer');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            // 重新设置玩家位置
+            player.x = canvas.width / 2;
+            player.y = canvas.height - 50;
+        }
+
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        function spawnDementor() {
+            const speed = difficulty;  // 根据难度调整速度
+            const size = Math.random() * 10 + 20;
             const x = Math.random() * (canvas.width - size);
-
+            
             dementors.push({
                 x: x,
                 y: -size,
                 size: size,
-                health: 3,
-                maxHealth: 3,
-                initialX: x,
-                ...pattern
+                speed: speed
             });
-        }
 
-        // 添加一个容器来管理所有怪物元素
-        const dementorContainer = document.createElement('div');
-        dementorContainer.style.position = 'fixed';
-        dementorContainer.style.left = '0';
-        dementorContainer.style.top = '0';
-        dementorContainer.style.width = '100%';
-        dementorContainer.style.height = '100%';
-        dementorContainer.style.pointerEvents = 'none';
-        document.body.appendChild(dementorContainer);
-
-        let dementorElements = new Set();
-
-        function clearDementors() {
-            // 清除所有 dementor 元素
-            dementorElements.forEach(el => el.remove());
-            dementorElements.clear();
-        }
-
-        function getCanvasPosition(x, y) {
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            return {
-                x: rect.left + (x / scaleX),
-                y: rect.top + (y / scaleY)
-            };
-        }
-
-        function drawDementor(x, y, size, health, emoji) {
-            const pos = getCanvasPosition(x, y);
-            const scaledSize = size * (canvas.getBoundingClientRect().width / canvas.width);
-
-            // 绘制生命值条
-            ctx.save();
-            ctx.fillStyle = '#600';
-            const healthBarWidth = size;
-            const healthBarHeight = 4;
-            ctx.fillRect(x - healthBarWidth/2, y - size/2 - 10, healthBarWidth * health / 3, healthBarHeight);
-            ctx.restore();
-
-            // 绘制怪物
-            const dementor = document.createElement('div');
-            dementor.className = 'dementor';
-            dementor.style.left = pos.x + 'px';
-            dementor.style.top = pos.y + 'px';
-            dementor.style.fontSize = scaledSize + 'px';
-            dementor.textContent = emoji;
-            document.body.appendChild(dementor);
-            dementorElements.add(dementor);
-        }
-
-        function checkCollision(x1, y1, x2, y2, distance) {
-            if (arguments.length === 5) {
-                // 主角的碰撞检测（保持小范围）
-                const actualDistance = distance / 3;
-                return Math.hypot(x1 - x2, y1 - y2) < actualDistance;
-            } else {
-                // 怪物的碰撞检测（与显示大小接近）
-                const obj1 = arguments[0];
-                const obj2 = arguments[1];
-                const dx = obj1.x - obj2.x;
-                const dy = obj1.y - obj2.y;
-                return Math.hypot(dx, dy) < obj1.size/2;
-            }
+            const dementorEl = document.createElement('div');
+            dementorEl.className = 'dementor';
+            dementorEl.textContent = '👻';
+            document.body.appendChild(dementorEl);
+            dementorElements.add(dementorEl);
         }
 
         function drawWizard(x, y, size, castingSpell) {
@@ -398,206 +500,13 @@
             ctx.restore();
         }
 
-        function castSpell() {
-            const now = Date.now();
-            const shootInterval = Math.max(100, 400 - player.power * 30);
-            if (now - lastShootTime >= shootInterval) {
-                const spellSize = 10;
-                spells.push({
-                    x: player.x,
-                    y: player.y - player.size / 2,
-                    size: spellSize,
-                    speed: 10
-                });
-                lastShootTime = now;
-            }
-        }
-
-        function updateSpells() {
-            for (let i = spells.length - 1; i >= 0; i--) {
-                const spell = spells[i];
-                spell.y -= spell.speed;
-                if (spell.y < 0) {
-                    spells.splice(i, 1);
-                }
-            }
-        }
-
-        function drawSpells() {
-            spells.forEach(spell => {
-                ctx.save();
-                
-                // 计算旋转角度
-                spell.rotation = (spell.rotation || 0) + 0.1;
-                
-                // 移动到子弹位置并旋转
-                ctx.translate(spell.x, spell.y);
-                ctx.rotate(spell.rotation);
-                
-                // 绘制方块
-                const size = spell.size * 1.5;
-                ctx.fillStyle = 'rgba(255, 200, 200, 0.7)';  // 淡红色
-                ctx.fillRect(-size/2, -size/2, size, size);
-                
-                // 绘制内部白色方块
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';  // 半透明白色
-                const innerSize = size * 0.6;
-                ctx.fillRect(-innerSize/2, -innerSize/2, innerSize, innerSize);
-                
-                ctx.restore();
-            });
-        }
-
-        function updatePowerUps() {
-            for (let i = powerUps.length - 1; i >= 0; i--) {
-                const powerUp = powerUps[i];
-                powerUp.y += powerUp.speed;
-
-                // 检查是否被收集
-                if (checkPowerUpCollision(powerUp, player)) {
-                    player.power++;
-                    updatePowerLevel();
-                    powerUps.splice(i, 1);
-                    continue;
-                }
-
-                // 检查是否超出屏幕
-                if (powerUp.y > canvas.height) {
-                    powerUps.splice(i, 1);
-                }
-            }
-        }
-
-        function drawPowerUps() {
-            powerUps.forEach(powerUp => {
-                drawPowerUp(powerUp);
-            });
-        }
-
-        function drawPowerUp(powerUp) {
-            const pos = getCanvasPosition(powerUp.x, powerUp.y);
-            const scaledSize = powerUp.size * (canvas.getBoundingClientRect().width / canvas.width);
-
-            // 获取或创建 powerUp 元素
-            let powerUpEl = document.getElementById(`powerup-${powerUp.x}-${powerUp.y}`);
-            if (!powerUpEl) {
-                powerUpEl = document.createElement('div');
-                powerUpEl.id = `powerup-${powerUp.x}-${powerUp.y}`;
-                powerUpEl.className = 'dementor';  // 复用 dementor 的样式
-                dementorContainer.appendChild(powerUpEl);
-            }
-
-            // 更新位置和样式
-            powerUpEl.style.left = pos.x + 'px';
-            powerUpEl.style.top = pos.y + 'px';
-            powerUpEl.style.fontSize = scaledSize + 'px';
-            powerUpEl.textContent = powerUp.emoji;
-        }
-
-        function checkPowerUpCollision(powerUp, player) {
-            const dx = powerUp.x - player.x;
-            const dy = powerUp.y - player.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            return distance < (powerUp.size + player.size) / 2;
-        }
-
-        function updatePowerLevel() {
-            powerLevelElement.textContent = `火力: ${player.power}`;
-        }
-
-        function gameLoop(currentTime) {
-            if (!isGameOver) {
-                // 计算帧间时间（秒）
-                const deltaTime = lastFrameTime ? (currentTime - lastFrameTime) / 1000 : 0;
-                lastFrameTime = currentTime;
-
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                clearDementors();  // 在每一帧开始时清除所有怪物元素
-
-                if (gameStarted) {
-                    castSpell();
-
-                    // 更新和绘制所有游戏对象
-                    updateSpells();
-                    updatePowerUps();
-                    drawSpells();
-                    drawPowerUps();
-
-                    // 更新和绘制摄魂怪
-                    for (let i = dementors.length - 1; i >= 0; i--) {
-                        const dementor = dementors[i];
-
-                        // 根据不同模式更新位置，使用 deltaTime 使移动速度独立于帧率
-                        switch (dementor.pattern) {
-                            case 'swing':
-                                dementor.angle += dementor.angleSpeed * deltaTime;
-                                dementor.y += dementor.speed * deltaTime * 60;  // 乘以 60 使速度与之前大致相同
-                                dementor.x += Math.sin(dementor.angle) * dementor.amplitude * 0.1 * deltaTime * 60;
-                                break;
-
-                            case 'spiral':
-                                dementor.angle += dementor.angleSpeed * deltaTime;
-                                dementor.y += dementor.speed * deltaTime * 60;
-                                dementor.x = dementor.initialX + Math.cos(dementor.angle) * dementor.radius;
-                                break;
-
-                            case 'zigzag':
-                                dementor.y += dementor.speed * deltaTime * 60;
-
-                                if (Date.now() - dementor.switchTime > dementor.switchInterval) {
-                                    dementor.direction *= -1;
-                                    dementor.switchTime = Date.now();
-                                }
-                                dementor.x += dementor.direction * dementor.amplitude * 0.1 * deltaTime * 60;
-                                break;
-                        }
-
-                        // 确保摄魂怪不会完全离开屏幕
-                        dementor.x = Math.max(dementor.size / 2, Math.min(canvas.width - dementor.size / 2, dementor.x));
-
-                        // 检查是否被击中
-                        for (let j = spells.length - 1; j >= 0; j--) {
-                            const spell = spells[j];
-                            if (checkCollision(dementor, spell)) {
-                                dementor.health--;
-                                spells.splice(j, 1);
-
-                                if (dementor.health <= 0) {
-                                    dementors.splice(i, 1);
-                                    score += 100;
-                                    document.getElementById('score').textContent = '分数: ' + score;
-                                    break;
-                                }
-                            }
-                        }
-
-                        drawDementor(dementor.x, dementor.y, dementor.size, dementor.health, dementor.emoji);
-
-                        // 检查与玩家碰撞
-                        if (checkCollision(dementor.x, dementor.y, player.x, player.y, dementor.size)) {
-                            gameOver();
-                            return;
-                        }
-
-                        // 检查是否到达底部
-                        if (dementor.y > canvas.height + dementor.size) {
-                            dementors.splice(i, 1);
-                        }
-                    }
-                }
-
-                drawWizard(player.x, player.y, player.size, Date.now() - lastShootTime < 100);
-                animationFrameId = requestAnimationFrame(gameLoop);
-            }
-        }
-
         function startGame() {
             gameStarted = true;
             isGameOver = false;
             score = 0;
-            document.getElementById('score').textContent = '分数: 0';
-            startMessage.style.display = 'none';
-            document.getElementById('difficulty').style.display = 'none';
+            document.getElementById('score').textContent = '分数: ' + score;
+            document.getElementById('startMessage').style.display = 'none';
+            document.getElementById('gameOverMessage').style.display = 'none';
             dementors = [];
             spells = [];
             powerUps = [];
@@ -605,9 +514,10 @@
             clearDementors();
             player = {
                 x: canvas.width / 2,
-                y: canvas.height - 100,
-                size: 40,
-                power: 0
+                y: canvas.height - 50,
+                size: 30,
+                power: 1,
+                castingSpell: false
             };
             updatePowerLevel();
             lastSpawnTime = Date.now();
@@ -624,8 +534,8 @@
             isGameOver = true;
             gameStarted = false;
             finalScoreElement.textContent = score;
-            document.getElementById('gameOver').style.display = 'flex';
-            document.getElementById('difficulty').style.display = 'none';
+            document.getElementById('gameOverMessage').style.display = 'flex';
+            document.getElementById('startMessage').style.display = 'none';
             // 清除怪物生成定时器
             if (window.spawnInterval) {
                 clearInterval(window.spawnInterval);
@@ -638,8 +548,8 @@
         }
 
         function restart() {
-            document.getElementById('gameOver').style.display = 'none';
-            document.getElementById('difficulty').style.display = 'flex';
+            document.getElementById('gameOverMessage').style.display = 'none';
+            document.getElementById('startMessage').style.display = 'flex';
             // 清除所有怪物元素
             clearDementors();
             if (animationFrameId) {
@@ -665,10 +575,14 @@
             }, 1000); // 每秒生成一波
         }
 
-        function getCanvasX(screenX) {
+        function getCanvasPosition(x, y) {
             const rect = canvas.getBoundingClientRect();
-            const scale = GAME_WIDTH / rect.width;
-            return (screenX - rect.left) * scale;
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: rect.left + (x / scaleX),
+                y: rect.top + (y / scaleY)
+            };
         }
 
         function handleMove(screenX) {
@@ -682,8 +596,7 @@
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             if (!gameStarted) {
-                document.getElementById('difficulty').style.display = 'flex';
-                startMessage.style.display = 'none';
+                document.getElementById('startMessage').style.display = 'flex';
             }
             const touch = e.touches[0];
             handleMove(touch.clientX);
@@ -708,28 +621,140 @@
 
         canvas.addEventListener('click', (e) => {
             if (!gameStarted) {
-                document.getElementById('difficulty').style.display = 'flex';
-                startMessage.style.display = 'none';
+                document.getElementById('startMessage').style.display = 'flex';
             }
         });
 
-        // 添加难度选择按钮的事件监听
-        document.querySelectorAll('.difficulty-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                startGame();
-            });
+        // 游戏难度设置
+        let difficulty = 2;  // 默认中等难度
+        const easyBtn = document.getElementById('easyBtn');
+        const normalBtn = document.getElementById('normalBtn');
+        const hardBtn = document.getElementById('hardBtn');
+
+        easyBtn.addEventListener('click', () => {
+            difficulty = 1;
+            startGame();
+            gameStarted = true;
         });
+
+        normalBtn.addEventListener('click', () => {
+            difficulty = 2;
+            startGame();
+            gameStarted = true;
+        });
+
+        hardBtn.addEventListener('click', () => {
+            difficulty = 3;
+            startGame();
+            gameStarted = true;
+        });
+
+        function spawnDementor() {
+            const speed = difficulty;  // 根据难度调整速度
+            const size = Math.random() * 10 + 20;
+            const x = Math.random() * (canvas.width - size);
+            
+            dementors.push({
+                x: x,
+                y: -size,
+                size: size,
+                speed: speed
+            });
+
+            const dementorEl = document.createElement('div');
+            dementorEl.className = 'dementor';
+            dementorEl.textContent = '👻';
+            document.body.appendChild(dementorEl);
+            dementorElements.add(dementorEl);
+        }
+
+        function clearDementors() {
+            // 清除所有 dementor 元素
+            dementorElements.forEach(el => el.remove());
+            dementorElements.clear();
+        }
+
+        function getCanvasX(screenX) {
+            const rect = canvas.getBoundingClientRect();
+            const scale = GAME_WIDTH / rect.width;
+            return (screenX - rect.left) * scale;
+        }
+
+        function drawPowerUp(powerUp) {
+            const pos = getCanvasPosition(powerUp.x, powerUp.y);
+            const scaledSize = powerUp.size * (canvas.getBoundingClientRect().width / canvas.width);
+            
+            const powerUpEl = document.createElement('div');
+            powerUpEl.className = 'dementor';  // 复用怪物的样式
+            powerUpEl.style.left = pos.x + 'px';
+            powerUpEl.style.top = pos.y + 'px';
+            powerUpEl.style.fontSize = scaledSize + 'px';
+            powerUpEl.textContent = powerUp.emoji;
+            document.body.appendChild(powerUpEl);
+            dementorElements.add(powerUpEl);
+        }
+
+        function checkCollision(x1, y1, x2, y2, distance) {
+            if (arguments.length === 5) {
+                // 主角的碰撞检测（保持小范围）
+                const actualDistance = distance / 3;
+                return Math.hypot(x1 - x2, y1 - y2) < actualDistance;
+            } else {
+                // 怪物的碰撞检测（与显示大小接近）
+                const obj1 = arguments[0];
+                const obj2 = arguments[1];
+                const dx = obj1.x - obj2.x;
+                const dy = obj1.y - obj2.y;
+                return Math.hypot(dx, dy) < obj1.size/2;
+            }
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
 
         restartBtn.addEventListener('click', restart);
 
-        function spawnPowerUp(x, y) {
-            powerUps.push({
-                x: x,
-                y: y,
-                size: 20,
-                speed: 5,
-                emoji: '⚡'  // 闪电表示火力道具
-            });
+        let gameState = 'start';
+        let deltaTime = 0;
+
+        function startGame() {
+            gameState = 'playing';
+            player = {
+                x: canvas.width / 2,
+                y: canvas.height - 50,
+                size: 30,
+                power: 1,
+                castingSpell: false
+            };
+            score = 0;
+            spells = [];
+            dementors = [];
+            powerUps = [];
+            lastSpawnTime = Date.now();
+            document.getElementById('score').textContent = '分数: ' + score;
+            document.getElementById('powerLevel').textContent = '火力: ' + player.power;
+            document.getElementById('startMessage').style.display = 'none';
+            document.getElementById('gameOverMessage').style.display = 'none';
+        }
+
+        function gameLoop() {
+            const now = Date.now();
+            deltaTime = now - lastFrameTime;
+            lastFrameTime = now;
+
+            clearCanvas();
+            clearDementors();
+
+            if (gameState === 'playing') {
+                updatePlayer();
+                updateSpells();
+                updateDementors();
+                updatePowerUps();
+                drawWizard(player.x, player.y, player.size, player.castingSpell);
+            }
+
+            requestAnimationFrame(gameLoop);
         }
 
         gameLoop();

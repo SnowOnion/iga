@@ -169,3 +169,55 @@ fonts.googleapis.com、fonts.gstatic.com 改成在中国大陆容易访问的吧
 移动端，分数显示还是超出屏幕顶部了
 
 ---
+
+请修复 1. 火力道具不掉落了 2. iPhone SE 的尺寸下，分数显示还是超出屏幕顶部了
+
+---
+
+1. 似乎能掉落道具了，但现在看不到道具的画面。请改成这样：30% 掉落🔵，吃了加 3 分；30% 掉落🔴，吃了加 1 火力；掉落后的下降速度是怪物 y 方向速度的 2 倍。
+2. iPhone SE 对「分数」两字能显示一半了。我认为屏幕尺寸不该这样尝试着适配，应该在任何尺寸，都在保持游戏界面宽高比的情况下，不超出屏幕的宽和高，而且尽量占满屏幕。你认为呢？
+
+---
+报错
+```
+(index):620 Uncaught ReferenceError: updatePowerLevel is not defined
+    at startGame ((index):620:13)
+    at HTMLButtonElement.<anonymous> ((index):727:17)
+
+(index):531 Uncaught ReferenceError: drawPowerUps is not defined
+    at gameLoop ((index):531:21)
+```
+
+---
+---
+
+点击选择难度后报错
+```
+(index):753 Uncaught ReferenceError: gameOverMessage is not defined
+    at startGame ((index):753:13)
+    at HTMLButtonElement.<anonymous> ((index):727:17)
+```
+
+---
+点击选择难度后不报错了，但是游戏也并不启动
+
+---
+---
+
+有 Bug：游戏启动后怪物并不生成。请好好回忆几个版本前游戏功能基本正常的样子。另外我看 updatePlayer、updateSpells、updateDementors、updatePowerUps 这几个函数都空着，这对吗？当然我只是提个建议，最终你来判断。
+
+---
+---
+
+报错 `Uncaught SyntaxError: Identifier 'canvas' has already been declared (at (index):382:13)`
+
+---
+报错 (index):382 Uncaught SyntaxError: Identifier 'lastFrameTime' has already been declared (at (index):382:13)
+
+---
+报错：Uncaught SyntaxError: Identifier 'spellCooldown' has already been declared (at (index):384:15)
+
+---
+报错：Uncaught SyntaxError: Identifier 'spellCooldown' has already been declared (at (index):383:15)
+
+---
