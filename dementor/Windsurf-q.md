@@ -156,6 +156,7 @@ fonts.googleapis.com、fonts.gstatic.com 改成在中国大陆容易访问的吧
     at (index):733:9
 ```
 以后尽量自测下
+
 ---
 
 问题很大：怪物的碰撞范围和它的画面分开了！另外，不要那个红圈
@@ -178,6 +179,7 @@ fonts.googleapis.com、fonts.gstatic.com 改成在中国大陆容易访问的吧
 2. iPhone SE 对「分数」两字能显示一半了。我认为屏幕尺寸不该这样尝试着适配，应该在任何尺寸，都在保持游戏界面宽高比的情况下，不超出屏幕的宽和高，而且尽量占满屏幕。你认为呢？
 
 ---
+
 报错
 ```
 (index):620 Uncaught ReferenceError: updatePowerLevel is not defined
@@ -188,7 +190,6 @@ fonts.googleapis.com、fonts.gstatic.com 改成在中国大陆容易访问的吧
     at gameLoop ((index):531:21)
 ```
 
----
 ---
 
 点击选择难度后报错
@@ -202,11 +203,9 @@ fonts.googleapis.com、fonts.gstatic.com 改成在中国大陆容易访问的吧
 点击选择难度后不报错了，但是游戏也并不启动
 
 ---
----
 
 有 Bug：游戏启动后怪物并不生成。请好好回忆几个版本前游戏功能基本正常的样子。另外我看 updatePlayer、updateSpells、updateDementors、updatePowerUps 这几个函数都空着，这对吗？当然我只是提个建议，最终你来判断。
 
----
 ---
 
 报错 `Uncaught SyntaxError: Identifier 'canvas' has already been declared (at (index):382:13)`
@@ -221,3 +220,54 @@ fonts.googleapis.com、fonts.gstatic.com 改成在中国大陆容易访问的吧
 报错：Uncaught SyntaxError: Identifier 'spellCooldown' has already been declared (at (index):383:15)
 
 ---
+
+有很多 redeclared variables，请统一处理
+
+---
+{{ ... }}
+
+---
+
+difficulty 仍然 redeclared
+
+---
+
+报错
+```
+(index):378 Uncaught ReferenceError: canvas is not defined
+    at resizeCanvas ((index):378:13)
+    at (index):208:9
+```
+
+【这里不是 prompt：提这个要求，跑了几秒之后，我在 Windsurf 点红方块取消了。】
+
+---
+
+报错
+```
+(index):378 Uncaught ReferenceError: canvas is not defined
+    at resizeCanvas ((index):378:13)
+    at (index):208:9
+```
+
+此外，修改文件的时候优先试试直接修改，不行再用 sed（不过，你会用 sed 来 workaround，好聪明！）
+
+---
+
+进入游戏没怪物了，报错
+```
+(index):301 Uncaught ReferenceError: spawnPowerUp is not defined
+    at updateDementors ((index):301:25)
+    at gameLoop ((index):694:17)
+```
+---
+
+别改功能，先修 bug
+
+---
+
+怪物不出现了
+
+---
+
+还有问题。

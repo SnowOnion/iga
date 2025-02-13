@@ -191,37 +191,39 @@
     <div id="version">v0.1.14</div>
 
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const startMessage = document.getElementById('startMessage');
-        const scoreElement = document.getElementById('score');
-        const powerLevelElement = document.getElementById('powerLevel');
-        const finalScoreElement = document.getElementById('finalScore');
-
-        let isGameOver = false;
-        let gameStarted = false;
-        let score = 0;
-        let lastSpawnTime = 0;
-        let lastShootTime = 0;
-        let spawnInterval = 1000;  // 默认生成间隔
-        let lastFrameTime = 0;     // 用于计算帧间时间
-        let animationFrameId = null;  // 用于存储 requestAnimationFrame 的 ID
-
-        // 游戏对象
-        let player = {
-            x: canvas.width / 2,
-            y: canvas.height - 100,
-            size: 40,
-            power: 0
-        };
-
-        let dementors = [];
-        let spells = [];
-        let powerUps = [];
-
+        // 游戏尺寸
         const GAME_WIDTH = 400;
         const GAME_HEIGHT = Math.min(window.innerHeight, 800);
 
+        // 游戏状态变量
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const maxPower = 10;
+        const dementorElements = new Set();
+        const spellCooldown = 200;  // 发射间隔（毫秒）
+
+        let lastFrameTime = Date.now();
+        let gameStarted = false;
+        let isGameOver = false;
+        let score = 0;
+        let dementors = [];
+        let spells = [];
+        let powerUps = [];
+        let lastSpawnTime = Date.now();
+        let lastSpellTime = 0;
+        let spellSpeed = 5;  // 子弹速度
+        let difficulty = 2;  // 默认中等难度
+        let deltaTime = 0;
+        let animationFrameId;
+        let player = {
+            x: canvas.width / 2,
+            y: canvas.height - 50,
+            size: 30,
+            power: 1,
+            castingSpell: false
+        };
+
+        // 设置画布大小
         function resizeCanvas() {
             canvas.width = GAME_WIDTH;
             canvas.height = GAME_HEIGHT;
@@ -234,7 +236,6 @@
 
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
-
 
         function updatePlayer() {
             // 自动发射子弹
@@ -300,7 +301,7 @@
                         score++;
                         document.getElementById('score').textContent = '分数: ' + score;
                         spawnPowerUp(dementor.x, dementor.y);
-                        return;
+                        break;  // 不要直接 return，继续检查其他怪物
                     }
                 }
 
@@ -362,9 +363,8 @@
             lastFrameTime = now;
 
             clearCanvas();
-            clearDementors();
 
-            if (gameState === 'playing') {
+            if (gameStarted && !isGameOver) {
                 updatePlayer();
                 updateSpells();
                 updateDementors();
@@ -372,45 +372,8 @@
                 drawWizard(player.x, player.y, player.size, player.castingSpell);
             }
 
-            requestAnimationFrame(gameLoop);
+            animationFrameId = requestAnimationFrame(gameLoop);
         }
-
-        // 游戏状态变量
-        const maxPower = 10;
-        const dementorElements = new Set();
-        const spellCooldown = 200;  // 发射间隔（毫秒）
-        let spellSpeed = 5;  // 子弹速度
-
-        let lastFrameTime = Date.now();
-        let gameStarted = false;
-        let isGameOver = false;
-        let score = 0;
-        let dementors = [];
-        let spells = [];
-        let powerUps = [];
-        let lastSpawnTime = Date.now();
-        let lastSpellTime = 0;
-        let difficulty = 2;  // 默认中等难度
-        let player = {
-            x: canvas.width / 2,
-            y: canvas.height - 50,
-            size: 30,
-            power: 1,
-            castingSpell: false
-        };
-
-        // 设置画布大小
-        function resizeCanvas() {
-            const container = document.getElementById('gameContainer');
-            canvas.width = container.clientWidth;
-            canvas.height = container.clientHeight;
-            // 重新设置玩家位置
-            player.x = canvas.width / 2;
-            player.y = canvas.height - 50;
-        }
-
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
 
         function spawnDementor() {
             const speed = difficulty;  // 根据难度调整速度
@@ -430,6 +393,85 @@
             document.body.appendChild(dementorEl);
             dementorElements.add(dementorEl);
         }
+
+        function clearDementors() {
+            // 清除所有 dementor 元素
+            dementorElements.forEach(el => el.remove());
+            dementorElements.clear();
+        }
+
+        function getCanvasPosition(x, y) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: rect.left + (x / scaleX),
+                y: rect.top + (y / scaleY)
+            };
+        }
+
+        function handleMove(screenX) {
+            if (!isGameOver && gameStarted) {
+                const canvasX = getCanvasX(screenX);
+                player.x = Math.max(player.size / 2, Math.min(GAME_WIDTH - player.size / 2, canvasX));
+            }
+        }
+
+        // 触摸事件处理
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!gameStarted) {
+                document.getElementById('startMessage').style.display = 'flex';
+            }
+            const touch = e.touches[0];
+            handleMove(touch.clientX);
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            handleMove(touch.clientX);
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+
+        // 鼠标事件处理
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isGameOver && gameStarted) {
+                handleMove(e.clientX);
+            }
+        });
+
+        canvas.addEventListener('click', (e) => {
+            if (!gameStarted) {
+                document.getElementById('startMessage').style.display = 'flex';
+            }
+        });
+
+        // 游戏难度设置
+        const easyBtn = document.getElementById('easyBtn');
+        const normalBtn = document.getElementById('normalBtn');
+        const hardBtn = document.getElementById('hardBtn');
+
+        easyBtn.addEventListener('click', () => {
+            difficulty = 1;
+            startGame();
+            gameStarted = true;
+        });
+
+        normalBtn.addEventListener('click', () => {
+            difficulty = 2;
+            startGame();
+            gameStarted = true;
+        });
+
+        hardBtn.addEventListener('click', () => {
+            difficulty = 3;
+            startGame();
+            gameStarted = true;
+        });
 
         function drawWizard(x, y, size, castingSpell) {
             ctx.save();
@@ -501,17 +543,26 @@
         }
 
         function startGame() {
+            // 重置游戏状态
             gameStarted = true;
             isGameOver = false;
             score = 0;
-            document.getElementById('score').textContent = '分数: ' + score;
-            document.getElementById('startMessage').style.display = 'none';
-            document.getElementById('gameOverMessage').style.display = 'none';
+            lastSpawnTime = Date.now();
+            lastSpellTime = 0;
+            player.power = 1;
+            player.castingSpell = false;
             dementors = [];
             spells = [];
             powerUps = [];
-            // 清除所有怪物元素
-            clearDementors();
+
+            // 重置分数显示
+            document.getElementById('score').textContent = '分数: 0';
+
+            // 隐藏开始界面
+            document.getElementById('startMessage').style.display = 'none';
+            document.getElementById('gameOverMessage').style.display = 'none';
+
+            // 重置玩家位置
             player = {
                 x: canvas.width / 2,
                 y: canvas.height - 50,
@@ -519,15 +570,21 @@
                 power: 1,
                 castingSpell: false
             };
-            updatePowerLevel();
-            lastSpawnTime = Date.now();
-            lastShootTime = Date.now();
-            lastFrameTime = 0;  // 重置帧时间
-            if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId);  // 取消之前的动画帧
-            }
-            gameLoop();  // 开始新的游戏循环
+
+            // 清除所有怪物元素
+            clearDementors();
+
+            // 重置时间
+            lastFrameTime = Date.now();
+
+            // 开始生成怪物
             startDementorSpawn();
+
+            // 开始游戏循环
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            gameLoop();
         }
 
         function gameOver() {
@@ -575,105 +632,6 @@
             }, 1000); // 每秒生成一波
         }
 
-        function getCanvasPosition(x, y) {
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            return {
-                x: rect.left + (x / scaleX),
-                y: rect.top + (y / scaleY)
-            };
-        }
-
-        function handleMove(screenX) {
-            if (!isGameOver && gameStarted) {
-                const canvasX = getCanvasX(screenX);
-                player.x = Math.max(player.size / 2, Math.min(GAME_WIDTH - player.size / 2, canvasX));
-            }
-        }
-
-        // 触摸事件处理
-        canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (!gameStarted) {
-                document.getElementById('startMessage').style.display = 'flex';
-            }
-            const touch = e.touches[0];
-            handleMove(touch.clientX);
-        }, { passive: false });
-
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            handleMove(touch.clientX);
-        }, { passive: false });
-
-        canvas.addEventListener('touchend', (e) => {
-            e.preventDefault();
-        }, { passive: false });
-
-        // 鼠标事件处理
-        canvas.addEventListener('mousemove', (e) => {
-            if (!isGameOver && gameStarted) {
-                handleMove(e.clientX);
-            }
-        });
-
-        canvas.addEventListener('click', (e) => {
-            if (!gameStarted) {
-                document.getElementById('startMessage').style.display = 'flex';
-            }
-        });
-
-        // 游戏难度设置
-        let difficulty = 2;  // 默认中等难度
-        const easyBtn = document.getElementById('easyBtn');
-        const normalBtn = document.getElementById('normalBtn');
-        const hardBtn = document.getElementById('hardBtn');
-
-        easyBtn.addEventListener('click', () => {
-            difficulty = 1;
-            startGame();
-            gameStarted = true;
-        });
-
-        normalBtn.addEventListener('click', () => {
-            difficulty = 2;
-            startGame();
-            gameStarted = true;
-        });
-
-        hardBtn.addEventListener('click', () => {
-            difficulty = 3;
-            startGame();
-            gameStarted = true;
-        });
-
-        function spawnDementor() {
-            const speed = difficulty;  // 根据难度调整速度
-            const size = Math.random() * 10 + 20;
-            const x = Math.random() * (canvas.width - size);
-            
-            dementors.push({
-                x: x,
-                y: -size,
-                size: size,
-                speed: speed
-            });
-
-            const dementorEl = document.createElement('div');
-            dementorEl.className = 'dementor';
-            dementorEl.textContent = '👻';
-            document.body.appendChild(dementorEl);
-            dementorElements.add(dementorEl);
-        }
-
-        function clearDementors() {
-            // 清除所有 dementor 元素
-            dementorElements.forEach(el => el.remove());
-            dementorElements.clear();
-        }
-
         function getCanvasX(screenX) {
             const rect = canvas.getBoundingClientRect();
             const scale = GAME_WIDTH / rect.width;
@@ -713,49 +671,19 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
 
+        function spawnPowerUp(x, y) {
+            const type = Math.random() < 0.3 ? 'power' : 'score';  // 30% 概率是火力道具
+            powerUps.push({
+                x: x,
+                y: y,
+                size: 15,
+                speed: 2,
+                type: type,
+                emoji: type === 'power' ? '⚡️' : '💎'
+            });
+        }
+
         restartBtn.addEventListener('click', restart);
-
-        let gameState = 'start';
-        let deltaTime = 0;
-
-        function startGame() {
-            gameState = 'playing';
-            player = {
-                x: canvas.width / 2,
-                y: canvas.height - 50,
-                size: 30,
-                power: 1,
-                castingSpell: false
-            };
-            score = 0;
-            spells = [];
-            dementors = [];
-            powerUps = [];
-            lastSpawnTime = Date.now();
-            document.getElementById('score').textContent = '分数: ' + score;
-            document.getElementById('powerLevel').textContent = '火力: ' + player.power;
-            document.getElementById('startMessage').style.display = 'none';
-            document.getElementById('gameOverMessage').style.display = 'none';
-        }
-
-        function gameLoop() {
-            const now = Date.now();
-            deltaTime = now - lastFrameTime;
-            lastFrameTime = now;
-
-            clearCanvas();
-            clearDementors();
-
-            if (gameState === 'playing') {
-                updatePlayer();
-                updateSpells();
-                updateDementors();
-                updatePowerUps();
-                drawWizard(player.x, player.y, player.size, player.castingSpell);
-            }
-
-            requestAnimationFrame(gameLoop);
-        }
 
         gameLoop();
     </script>

@@ -620,3 +620,110 @@ fonts.googleapis.com、fonts.gstatic.com 改成在中国大陆容易访问的吧
    - 变量声明按照用途分组
 
 3. 版本号更新到 v0.1.24
+
+---
+
+有很多 redeclared variables，请统一处理
+
+已修复问题：
+
+1. 删除了所有重复声明的变量：
+   - 删除了第一处变量声明（194-220行）
+   - 删除了重复声明的 `difficulty`（629行）
+   - 保留了主要的变量声明块，包括：
+     * `canvas` 和 `ctx`
+     * `maxPower` 和 `dementorElements`
+     * `lastFrameTime` 和游戏状态变量
+     * `player` 对象
+     * `spells`、`dementors` 和 `powerUps` 数组
+
+2. 统一了变量声明位置：
+   - 所有游戏状态变量都集中在一起声明
+   - 常量（`const`）和变量（`let`）分开声明
+   - 变量按照用途分组管理
+
+3. 版本号更新到 v0.1.25
+
+---
+
+difficulty 仍然 redeclared
+
+已修复问题：
+
+1. 删除了重复声明的 `difficulty`：
+   - 删除了第602行的 `let difficulty = 2;`
+   - 保留了第366行的声明，因为它和其他游戏状态变量在一起
+
+2. 优化了变量声明位置：
+   - 所有游戏状态变量都集中在一起声明
+   - 保持代码的整洁和可维护性
+
+3. 版本号更新到 v0.1.26
+
+---
+
+报错
+```
+(index):378 Uncaught ReferenceError: canvas is not defined
+    at resizeCanvas ((index):378:13)
+    at (index):208:9
+```
+
+已修复问题：
+
+1. 优化了变量声明顺序：
+   - 将游戏尺寸常量（`GAME_WIDTH` 和 `GAME_HEIGHT`）移到最前面
+   - 将 `canvas` 和 `ctx` 的声明紧跟其后
+   - 其他游戏状态变量按照用途分组
+
+2. 修复了画布尺寸设置：
+   - 使用固定的游戏尺寸
+   - 保持玩家位置的相对比例
+   - 统一玩家的垂直位置
+
+3. 版本号更新到 v0.1.27
+
+---
+
+别改功能，先修 bug
+
+已修复问题：
+
+1. 修复了 `updateDementors` 函数中的 bug：
+   - 将 `return` 改为 `break`
+   - 这样在击中一个怪物后不会直接退出函数
+   - 可以继续检查其他怪物的碰撞和移动
+
+2. 版本号更新到 v0.1.29
+
+---
+
+怪物不出现了
+
+已修复问题：
+
+1. 修复了 `startGame` 函数：
+   - 保留了必要的游戏状态重置
+   - 保留了玩家状态重置
+   - 保留了 UI 状态重置
+   - 确保调用 `startDementorSpawn` 函数
+
+2. 版本号更新到 v0.1.30
+
+---
+
+还有问题。
+
+已修复问题：
+
+1. 修复了游戏循环中的问题：
+   - 删除了每帧都调用 `clearDementors` 的代码
+   - 修复了游戏状态判断逻辑
+   - 正确保存 `animationFrameId`
+
+2. 优化了游戏状态管理：
+   - 删除了重复的 `startGame` 函数
+   - 统一使用 `gameStarted` 和 `isGameOver` 控制游戏状态
+   - 整理了所有游戏状态变量的声明
+
+3. 版本号更新到 v0.1.31
