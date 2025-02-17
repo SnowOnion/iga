@@ -130,3 +130,45 @@ fonts.googleapis.com、fonts.gstatic.com 改成在中国大陆容易访问的吧
 ---
 
 ”不要修改历史记录“的意思是，对于 @Windsurf-q.md 和 @Windsurf-auto.md ，你应该只往最后加东西，不应该改已有的东西
+
+---
+
+代码是不是有些难以维护了？请重构成好维护的样子。
+
+---
+
+报错
+```
+dementor.js:70 Uncaught TypeError: Cannot read properties of null (reading 'style')
+    at Dementor.draw (dementor.js:70:20)
+    at Game.gameLoop (game.js:219:30)
+    at game.js:235:74
+```
+
+---
+
+怪物图像不显示了，请修复
+
+---
+
+怪物图像还是不显示，只显示血条。是不是 canvas 画不了 emoji？因为之前的世界线里遇到过这个问题。
+
+---
+
+怪物图像还是不显示
+
+---
+
+怪物图像还是不显示
+
+---
+
+开始界面报错
+```
+(index):160 Uncaught TypeError: Cannot read properties of null (reading 'addEventListener')
+    at (index):160:46
+```
+
+---
+
+游戏无法点击开始了

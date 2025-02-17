@@ -1,0 +1,2 @@
+1. 每次我们对话后，把问题记在 Windsurf-q.md，把问答记在 Windsurf-auto.md。
+2. 如果是一次较大的代码变更，在游戏界面更新版本号，并在 ChangeLog.md 中记录。
