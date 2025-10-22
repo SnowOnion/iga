@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>票务管理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .editable {
+            background-color: #fff3cd;
+        }
+        .editable:focus {
+            outline: 2px solid #3b82f6;
+            background-color: white;
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold mb-4 text-center text-gray-800">票务管理系统</h1>
+        
+        <!-- 已开始模拟时长和重置按钮 -->
+        <div class="flex justify-center items-center gap-6 mb-8">
+            <div class="text-lg">
+                <span class="font-semibold">已开始模拟时长：</span>
+                <span id="durationDisplay" class="text-blue-600 font-mono text-xl">00:00:00.0</span>
+            </div>
+            <button onclick="resetSimulation()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-medium transition">
+                重新开始模拟
+            </button>
+            <div class="text-sm text-gray-600">
+                <span class="font-semibold">模拟开始于：</span>
+                <span id="startTimeDisplay" class="font-mono">-</span>
+            </div>
+        </div>
+
+        <!-- 编辑余票版 -->
+        <div class="mb-12 bg-white rounded-lg shadow-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-red-600">编辑余票版</h2>
+                <button onclick="refreshData()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium transition">
+                    刷新数据
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse border-2 border-gray-400">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border-2 border-gray-400 px-4 py-3 text-center font-semibold">时间段</th>
+                            <th class="border-2 border-gray-400 px-4 py-3 text-center font-semibold">预约人数</th>
+                            <th class="border-2 border-gray-400 px-4 py-3 text-center font-semibold">余票</th>
+                            <th class="border-2 border-gray-400 px-4 py-3 text-center font-semibold">总票数</th>
+                            <th class="border-2 border-gray-400 px-4 py-3 text-center font-semibold">已核销人数</th>
+                        </tr>
+                    </thead>
+                    <tbody id="remainingTableBody">
+                        <!-- 数据行将由 JavaScript 填充 -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4 flex justify-end">
+                <button onclick="updateRemaining()" class="bg-cyan-500 hover:bg-cyan-600 text-white px-8 py-3 rounded-lg font-medium text-lg transition">
+                    确认修改
+                </button>
+            </div>
+        </div>
+
+        <!-- 编辑总票数版 -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-red-600">编辑总票数版</h2>
+                <button onclick="refreshData()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium transition">
+                    刷新数据
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse border-2 border-gray-400">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border-2 border-gray-400 px-4 py-3 text-center font-semibold">时间段</th>
+                            <th class="border-2 border-gray-400 px-4 py-3 text-center font-semibold">预约人数</th>
+                            <th class="border-2 border-gray-400 px-4 py-3 text-center font-semibold">余票</th>
+                            <th class="border-2 border-gray-400 px-4 py-3 text-center font-semibold">总票数</th>
+                            <th class="border-2 border-gray-400 px-4 py-3 text-center font-semibold">已核销人数</th>
+                        </tr>
+                    </thead>
+                    <tbody id="totalTableBody">
+                        <!-- 数据行将由 JavaScript 填充 -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4 flex justify-end">
+                <button onclick="updateTotal()" class="bg-cyan-500 hover:bg-cyan-600 text-white px-8 py-3 rounded-lg font-medium text-lg transition">
+                    确认修改
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ticketData = null;
+        let startTimeMs = Date.now(); // 开始时间戳（毫秒）
+        let durationTimer = null; // 时长计时器
+
+        // 初始化页面
+        async function init() {
+            await refreshData();
+            startDurationTimer();
+        }
+
+        // 格式化时长（毫秒转换为 HH:MM:SS.d）
+        function formatDuration(milliseconds) {
+            const totalSeconds = Math.floor(milliseconds / 1000);
+            const deciseconds = Math.floor((milliseconds % 1000) / 100);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const secs = totalSeconds % 60;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${deciseconds}`;
+        }
+
+        // 启动时长计时器（0.1秒更新）
+        function startDurationTimer() {
+            if (durationTimer) {
+                clearInterval(durationTimer);
+            }
+            durationTimer = setInterval(() => {
+                const elapsed = Date.now() - startTimeMs;
+                document.getElementById('durationDisplay').textContent = formatDuration(elapsed);
+            }, 100);
+        }
+
+        // 更新开始时间显示
+        function updateStartTimeDisplay(timeStr) {
+            document.getElementById('startTimeDisplay').textContent = timeStr || '-';
+        }
+
+        // 刷新数据
+        async function refreshData() {
+            try {
+                const response = await fetch('/api/tickets');
+                const data = await response.json();
+                ticketData = data.slots;
+                // 从服务器同步开始时间
+                if (data.startTimeMs) {
+                    startTimeMs = data.startTimeMs;
+                }
+                updateStartTimeDisplay(data.startTimeStr);
+                renderTables();
+            } catch (error) {
+                alert('获取数据失败: ' + error.message);
+            }
+        }
+
+        // 重新开始模拟
+        async function resetSimulation() {
+            if (!confirm('确定要重新开始模拟吗？所有数据将被重置。')) {
+                return;
+            }
+            try {
+                const response = await fetch('/api/tickets/reset', {
+                    method: 'POST',
+                });
+                const data = await response.json();
+                ticketData = data.slots;
+                // 同步开始时间
+                if (data.startTimeMs) {
+                    startTimeMs = data.startTimeMs;
+                }
+                updateStartTimeDisplay(data.startTimeStr);
+                renderTables();
+                // 不再显示成功弹窗
+            } catch (error) {
+                alert('重置失败: ' + error.message);
+            }
+        }
+
+        // 渲染两个表格
+        function renderTables() {
+            renderRemainingTable();
+            renderTotalTable();
+            attachEnterKeyListeners();
+        }
+
+        // 绑定回车键事件
+        function attachEnterKeyListeners() {
+            // 为余票编辑框添加回车事件
+            for (let i = 0; i < ticketData.length; i++) {
+                const remainingInput = document.getElementById(`remaining_${i}`);
+                if (remainingInput) {
+                    remainingInput.addEventListener('keypress', async function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const focusedElement = document.activeElement;
+                            await updateRemaining();
+                            // 恢复焦点（延迟以确保 alert 关闭后生效）
+                            setTimeout(() => {
+                                if (focusedElement && focusedElement.focus) {
+                                    focusedElement.focus();
+                                    focusedElement.select();
+                                }
+                            }, 50);
+                        }
+                    });
+                }
+                
+                // 为总票数编辑框添加回车事件
+                const totalInput = document.getElementById(`total_${i}`);
+                if (totalInput) {
+                    totalInput.addEventListener('keypress', async function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const focusedElement = document.activeElement;
+                            await updateTotal();
+                            // 恢复焦点（延迟以确保 alert 关闭后生效）
+                            setTimeout(() => {
+                                if (focusedElement && focusedElement.focus) {
+                                    focusedElement.focus();
+                                    focusedElement.select();
+                                }
+                            }, 50);
+                        }
+                    });
+                }
+            }
+        }
+
+        // 渲染编辑余票版表格
+        function renderRemainingTable() {
+            const tbody = document.getElementById('remainingTableBody');
+            let html = '';
+            
+            let totalReserved = 0;
+            let totalRemaining = 0;
+            let totalTickets = 0;
+            let totalCheckedIn = 0;
+
+            ticketData.forEach((slot, index) => {
+                totalReserved += slot.reserved;
+                totalRemaining += slot.remaining;
+                totalTickets += slot.total;
+                totalCheckedIn += slot.checkedIn;
+
+                html += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="border-2 border-gray-400 px-4 py-3 text-center">${slot.name}</td>
+                        <td class="border-2 border-gray-400 px-4 py-3 text-center">${slot.reserved}</td>
+                        <td class="border-2 border-gray-400 px-4 py-3 text-center">
+                            <input type="number" 
+                                   id="remaining_${index}" 
+                                   value="${slot.remaining}" 
+                                   min="0"
+                                   class="w-full text-center text-lg font-semibold text-red-600 editable border-0 p-2 rounded">
+                        </td>
+                        <td class="border-2 border-gray-400 px-4 py-3 text-center">${slot.total}</td>
+                        <td class="border-2 border-gray-400 px-4 py-3 text-center">${slot.checkedIn}</td>
+                    </tr>
+                `;
+            });
+
+            // 合计行
+            html += `
+                <tr class="bg-gray-100 font-bold">
+                    <td class="border-2 border-gray-400 px-4 py-3 text-center">合计</td>
+                    <td class="border-2 border-gray-400 px-4 py-3 text-center">${totalReserved}</td>
+                    <td class="border-2 border-gray-400 px-4 py-3 text-center text-red-600">${totalRemaining}</td>
+                    <td class="border-2 border-gray-400 px-4 py-3 text-center">${totalTickets}</td>
+                    <td class="border-2 border-gray-400 px-4 py-3 text-center">${totalCheckedIn}</td>
+                </tr>
+            `;
+
+            tbody.innerHTML = html;
+        }
+
+        // 渲染编辑总票数版表格
+        function renderTotalTable() {
+            const tbody = document.getElementById('totalTableBody');
+            let html = '';
+            
+            let totalReserved = 0;
+            let totalRemaining = 0;
+            let totalTickets = 0;
+            let totalCheckedIn = 0;
+
+            ticketData.forEach((slot, index) => {
+                totalReserved += slot.reserved;
+                totalRemaining += slot.remaining;
+                totalTickets += slot.total;
+                totalCheckedIn += slot.checkedIn;
+
+                html += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="border-2 border-gray-400 px-4 py-3 text-center">${slot.name}</td>
+                        <td class="border-2 border-gray-400 px-4 py-3 text-center">${slot.reserved}</td>
+                        <td class="border-2 border-gray-400 px-4 py-3 text-center text-red-600 font-semibold">${slot.remaining}</td>
+                        <td class="border-2 border-gray-400 px-4 py-3 text-center">
+                            <input type="number" 
+                                   id="total_${index}" 
+                                   value="${slot.total}" 
+                                   min="${slot.reserved}"
+                                   class="w-full text-center text-lg editable border-0 p-2 rounded">
+                        </td>
+                        <td class="border-2 border-gray-400 px-4 py-3 text-center">${slot.checkedIn}</td>
+                    </tr>
+                `;
+            });
+
+            // 合计行
+            html += `
+                <tr class="bg-gray-100 font-bold">
+                    <td class="border-2 border-gray-400 px-4 py-3 text-center">合计</td>
+                    <td class="border-2 border-gray-400 px-4 py-3 text-center">${totalReserved}</td>
+                    <td class="border-2 border-gray-400 px-4 py-3 text-center text-red-600">${totalRemaining}</td>
+                    <td class="border-2 border-gray-400 px-4 py-3 text-center">${totalTickets}</td>
+                    <td class="border-2 border-gray-400 px-4 py-3 text-center">${totalCheckedIn}</td>
+                </tr>
+            `;
+
+            tbody.innerHTML = html;
+        }
+
+        // 更新余票
+        async function updateRemaining() {
+            const remaining = [];
+            for (let i = 0; i < ticketData.length; i++) {
+                const value = parseInt(document.getElementById(`remaining_${i}`).value);
+                remaining.push(value);
+            }
+
+            try {
+                const response = await fetch('/api/tickets/remaining', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ remaining }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    // 显示详细错误信息
+                    let errorMsg = data.error + '\n\n';
+                    if (data.errors && data.errors.length > 0) {
+                        errorMsg += '错误详情：\n';
+                        data.errors.forEach(err => {
+                            errorMsg += `- ${err.slotName}: ${err.message} (期望值≥${err.expected}, 实际提交值=${err.actual})\n`;
+                        });
+                    }
+                    alert(errorMsg);
+                    // 刷新显示当前实际数据
+                    if (data.slots) {
+                        ticketData = data.slots;
+                        renderTables();
+                    }
+                    return;
+                }
+
+                ticketData = data.slots;
+                // 同步开始时间
+                if (data.startTimeMs) {
+                    startTimeMs = data.startTimeMs;
+                }
+                renderTables();
+                alert('余票更新成功！');
+            } catch (error) {
+                alert('更新失败: ' + error.message);
+            }
+        }
+
+        // 更新总票数
+        async function updateTotal() {
+            const total = [];
+            for (let i = 0; i < ticketData.length; i++) {
+                const value = parseInt(document.getElementById(`total_${i}`).value);
+                total.push(value);
+            }
+
+            try {
+                const response = await fetch('/api/tickets/total', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ total }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    // 显示详细错误信息
+                    let errorMsg = data.error + '\n\n';
+                    if (data.errors && data.errors.length > 0) {
+                        errorMsg += '错误详情：\n';
+                        data.errors.forEach(err => {
+                            errorMsg += `- ${err.slotName}: ${err.message} (当前预约人数=${err.expected}, 实际提交值=${err.actual})\n`;
+                        });
+                    }
+                    alert(errorMsg);
+                    // 刷新显示当前实际数据
+                    if (data.slots) {
+                        ticketData = data.slots;
+                        renderTables();
+                    }
+                    return;
+                }
+
+                ticketData = data.slots;
+                // 同步开始时间
+                if (data.startTimeMs) {
+                    startTimeMs = data.startTimeMs;
+                }
+                renderTables();
+                alert('总票数更新成功！');
+            } catch (error) {
+                alert('更新失败: ' + error.message);
+            }
+        }
+
+        // 页面加载时初始化
+        window.onload = init;
+    </script>
+</body>
+</html>
