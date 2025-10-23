@@ -88,7 +88,10 @@ func main() {
 		api.POST("/tickets/reset", resetTickets)
 	}
 
-	r.Run(":8080")
+	err := r.Run(":8601")
+	if err != nil {
+		panic(err)
+	}
 }
 
 // getTickets 获取当前票务数据
@@ -101,9 +104,9 @@ func getTickets(c *gin.Context) {
 	startTimeStr := ticketData.StartTime.Format("2006-01-02 15:04:05")
 	c.JSON(http.StatusOK, gin.H{
 		"slots":        ticketData.Slots,
-		"duration":     duration,      // 已开始模拟时长（秒）
-		"startTimeMs":  startTimeMs,   // 开始时间戳（毫秒）
-		"startTimeStr": startTimeStr,  // 开始时间字符串
+		"duration":     duration,     // 已开始模拟时长（秒）
+		"startTimeMs":  startTimeMs,  // 开始时间戳（毫秒）
+		"startTimeStr": startTimeStr, // 开始时间字符串
 	})
 }
 
